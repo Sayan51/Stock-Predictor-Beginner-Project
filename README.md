@@ -1,4 +1,7 @@
 # Stock-Predictor-Beginner-Project
+## 🚀 Live Web App
+
+[Click here to try the live app](https://stock-predictor-beginner-project-mzhpqyxlztjb6ywiqgzayx.streamlit.app/)
 Machine learning project that predicts 5-day stock direction using historical market data from Yahoo Finance. Built with Python, Pandas, and Random Forest, using time-series split to prevent data leakage. Achieved ~53% accuracy with trend-based features like moving averages, momentum, and volatility. Developed for educational purposes.
 # 📈 Stock Market Direction Prediction using Machine Learning
 
