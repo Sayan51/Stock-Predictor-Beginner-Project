@@ -3,30 +3,39 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 
-st.title("📈 Stock Direction Predictor")
-st.write("Predicts 5-day stock direction using machine learning.")
+st.markdown("""
+<style>
+.big-font {
+    font-size:20px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.set_page_config(page_title="Stock Predictor", page_icon="📈", layout="centered")
+
+st.title("📈 AI Stock Direction Predictor")
+st.markdown("Predicts 5-day stock movement using Machine Learning")
 
 ticker = st.text_input("Enter Stock Ticker (e.g., AAPL, MSFT, RELIANCE.NS)", "AAPL")
 
-if st.button("Predict"):
+if st.button("Analyze"):
 
-    with st.spinner("Fetching data and training model..."):
+    with st.spinner("Fetching data and analyzing..."):
 
         try:
             data = yf.download(ticker, period="5y", interval="1d")
 
-            # Check invalid ticker
             if data.empty:
-                st.error("❌ Invalid ticker symbol. Please try again.")
+                st.error("❌ Invalid ticker symbol.")
                 st.stop()
 
-            # Check minimum data length
-            if len(data) < 100:
-                st.error("❌ Not enough historical data for prediction.")
-                st.stop()
+            # 📊 Show live stock chart
+            st.subheader("📊 Price Chart (5 Years)")
+            st.line_chart(data["Close"])
 
-            # Feature engineering
+            # Feature Engineering
             data["MA10"] = data["Close"].rolling(10).mean()
             data["MA50"] = data["Close"].rolling(50).mean()
             data["MA_Diff"] = data["MA10"] - data["MA50"]
@@ -38,18 +47,17 @@ if st.button("Predict"):
 
             data = data.dropna()
 
-            if data.empty:
-                st.error("❌ Data processing failed. Try another ticker.")
-                st.stop()
-
             features = ["MA10", "MA50", "MA_Diff", "Momentum_5", "Volatility_5"]
 
             X = data[features]
             y = data["Target"]
 
             split = int(len(data) * 0.8)
+
             X_train = X[:split]
+            X_test = X[split:]
             y_train = y[:split]
+            y_test = y[split:]
 
             model = RandomForestClassifier(
                 n_estimators=300,
@@ -60,14 +68,37 @@ if st.button("Predict"):
 
             model.fit(X_train, y_train)
 
+            # 📈 Model accuracy
+            y_pred = model.predict(X_test)
+            accuracy = accuracy_score(y_test, y_pred)
+
+            st.subheader("📈 Model Performance")
+            st.write(f"Accuracy: **{round(accuracy*100,2)}%**")
+
+            # 🎯 Prediction
             latest_data = X.iloc[-1:]
-
             prediction = model.predict(latest_data)[0]
+            probability = model.predict_proba(latest_data)[0]
 
-            if prediction == 1:
-                st.success("📈 Prediction: Stock likely to move UP in next 5 days")
-            else:
-                st.error("📉 Prediction: Stock likely to move DOWN in next 5 days")
+            st.subheader("🔮 5-Day Prediction")
 
-        except Exception as e:
-            st.error("⚠ Something went wrong. Please try again.")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                if prediction == 1:
+                    st.success("📈 Likely to Move UP")
+                else:
+                    st.error("📉 Likely to Move DOWN")
+
+            with col2:
+                up_prob = round(probability[1] * 100, 2)
+                down_prob = round(probability[0] * 100, 2)
+
+                st.write(f"📊 Up Probability: **{up_prob}%**")
+                st.write(f"📊 Down Probability: **{down_prob}%**")
+
+            st.markdown("---")
+            st.caption("Educational project. Not financial advice.")
+
+        except Exception:
+            st.error("⚠ Something went wrong. Try another ticker.")
